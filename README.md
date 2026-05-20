@@ -10,7 +10,8 @@ Claude Code 용 일반 에이전트 하네스. 여러 프로젝트에 복붙해�
 
 ```
 cj-harness/
-├── install.sh                # 프로젝트에 설치/업데이트 (인터랙티브 또는 -y 비대화형)
+├── install.sh                # 셸 진입점 (인터랙티브 또는 -y 비대화형)
+├── INSTALL-AI.md             # AI 진입점 (Claude Code 가 fetch 해서 따라하는 가이드)
 ├── README.md
 ├── .gitignore
 ├── payload/                  # 대상 프로젝트로 배포되는 페이로드 (install.sh 가 명시적 매핑으로 복사)
@@ -87,13 +88,30 @@ cj-harness/
 
 ## 설치
 
-### 1) 하네스 자체 clone (최초 1 회)
+### 방법 1 — AI 진입점 (권장, Claude Code 안에서)
+
+새 레포 또는 기존 레포 디렉토리에서 Claude Code 실행 후 한 줄:
+
+```
+cj-harness 깔아줘 — https://github.com/wodn5515/cj-harness
+```
+
+AI 가 자동으로 [`INSTALL-AI.md`](./INSTALL-AI.md) 를 fetch 해서 단계대로 진행:
+
+- **기존 레포** (코드·`package.json` 등 존재): `commands.{test,lint,build}` 자동 추정, 모호한 것만 사용자에게 묻기 → 페이로드 복사. 자동 커밋은 안 함 (사용자 작업과 섞이지 않게).
+- **빈 레포** (아무것도 없음): 시작 질문 (이름·brancha·GitHub remote·인터뷰 여부) → `git init` + 페이로드 복사 + 첫 커밋 → **PRD 인터뷰** (페이로드의 `prd-interview/SKILL.md` 정직 참조) → 인터뷰 결과로 `project.json`·`CLAUDE.md` 일괄 갱신 + 두 번째 커밋 → (선택) `gh repo create --private --push` 까지.
+
+설치 후 Claude Code 세션 재시작하면 슬래시 스킬 (`/work`, `/pr`, `/meta`, ...) 활성.
+
+### 방법 2 — 셸 진입점 (CI·자동화 / 사람 직접)
+
+#### 2a. 하네스 자체 clone (최초 1 회)
 
 ```bash
 git clone https://github.com/wodn5515/cj-harness ~/cj-harness
 ```
 
-### 2) 대상 프로젝트에 설치
+#### 2b. 대상 프로젝트에 설치
 
 ```bash
 cd /path/to/your-project
