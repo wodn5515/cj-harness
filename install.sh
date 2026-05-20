@@ -22,13 +22,14 @@
 #   HARNESS_GATES_TDD      true / false (기본: true)
 #   HARNESS_GATES_PEER     true / false (기본: true)
 #
-# 설치되는 것:
-#   .claude/agents/ skills/ hooks/  ← 하네스 표준
-#   .claude/settings.json (없을 때만)
-#   .claude/project.json (없을 때만 — 인터랙티브 또는 -y 자동)
-#
-# 별도 생성:
-#   AGENTS.md / CLAUDE.md (각각 없을 때만, 템플릿 복사)
+# 소스 → 타겟 매핑 (전부 payload/ 에서 읽어 대상의 .claude/ 또는 루트로 복사):
+#   payload/agents/*.md         → <target>/.claude/agents/*.md
+#   payload/skills/*/           → <target>/.claude/skills/*/
+#   payload/hooks/*.sh          → <target>/.claude/hooks/*.sh
+#   payload/settings.json       → <target>/.claude/settings.json   (없을 때만)
+#   payload/project.example.json → <target>/.claude/project.json   (없을 때만 — 인터랙티브 또는 -y 자동)
+#   payload/AGENTS.md           → <target>/AGENTS.md               (없을 때만)
+#   payload/CLAUDE.md           → <target>/CLAUDE.md               (없을 때만)
 
 set -e
 
@@ -98,21 +99,21 @@ install_file() {
 
 # agents
 echo "▶ agents/"
-for f in "$HARNESS_DIR/.claude/agents"/*.md; do
+for f in "$HARNESS_DIR/payload/agents"/*.md; do
   base=$(basename "$f")
   install_file "$f" ".claude/agents/$base"
 done
 
 # skills (디렉토리 단위)
 echo "▶ skills/"
-for d in "$HARNESS_DIR/.claude/skills"/*/; do
+for d in "$HARNESS_DIR/payload/skills"/*/; do
   base=$(basename "$d")
   install_file "$d" ".claude/skills/$base"
 done
 
 # hooks
 echo "▶ hooks/"
-for f in "$HARNESS_DIR/.claude/hooks"/*.sh; do
+for f in "$HARNESS_DIR/payload/hooks"/*.sh; do
   base=$(basename "$f")
   install_file "$f" ".claude/hooks/$base"
   chmod +x ".claude/hooks/$base"
@@ -130,7 +131,7 @@ echo "▶ settings.json"
 if [ -f ".claude/settings.json" ]; then
   echo "  ⏭  .claude/settings.json 이미 존재 — 건드리지 않음"
 else
-  cp "$HARNESS_DIR/.claude/settings.json" ".claude/settings.json"
+  cp "$HARNESS_DIR/payload/settings.json" ".claude/settings.json"
   echo "  📄 .claude/settings.json"
 fi
 
@@ -287,8 +288,8 @@ echo "▶ AGENTS.md"
 if [ -f "AGENTS.md" ]; then
   echo "  ⏭  AGENTS.md 이미 존재 — 건드리지 않음"
 else
-  cp "$HARNESS_DIR/templates/AGENTS.md" "AGENTS.md"
-  echo "  📄 AGENTS.md (템플릿 복사 — 필요하면 프로젝트 컨텍스트로 다듬으세요)"
+  cp "$HARNESS_DIR/payload/AGENTS.md" "AGENTS.md"
+  echo "  📄 AGENTS.md (페이로드 복사 — 필요하면 프로젝트 컨텍스트로 다듬으세요)"
 fi
 
 # CLAUDE.md (없을 때만)
@@ -296,8 +297,8 @@ echo "▶ CLAUDE.md"
 if [ -f "CLAUDE.md" ]; then
   echo "  ⏭  CLAUDE.md 이미 존재 — 건드리지 않음"
 else
-  cp "$HARNESS_DIR/templates/CLAUDE.md" "CLAUDE.md"
-  echo "  📄 CLAUDE.md (템플릿 복사 — 프로젝트 컨텍스트를 채워주세요)"
+  cp "$HARNESS_DIR/payload/CLAUDE.md" "CLAUDE.md"
+  echo "  📄 CLAUDE.md (페이로드 복사 — 프로젝트 컨텍스트를 채워주세요)"
 fi
 
 echo ""

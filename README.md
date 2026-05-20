@@ -13,15 +13,15 @@ cj-harness/
 ├── install.sh                # 프로젝트에 설치/업데이트 (인터랙티브 또는 -y 비대화형)
 ├── README.md
 ├── .gitignore
-├── .claude/
-│   ├── agents/               # 6 개 에이전트
+├── payload/                  # 대상 프로젝트로 배포되는 페이로드 (install.sh 가 명시적 매핑으로 복사)
+│   ├── agents/               # 6 개 에이전트  → 대상의 .claude/agents/
 │   │   ├── worker.md          # 코드 작업자
 │   │   ├── lint-checker.md    # 린트/포매팅 peer
 │   │   ├── side-effect-checker.md  # 사이드이펙트·보안 peer
 │   │   ├── test-writer.md     # TDD 선작성 (단발 호출)
 │   │   ├── designer.md        # UI 골격 (단발 호출)
 │   │   └── reviewer.md        # PR 리뷰 (별도 세션)
-│   ├── skills/               # 9 개 슬래시 스킬
+│   ├── skills/               # 9 개 슬래시 스킬  → 대상의 .claude/skills/
 │   │   ├── work/              # 새 기능 작업 시작
 │   │   ├── hotfix/            # 긴급 수정
 │   │   ├── meta/              # 문서·설정 변경
@@ -31,16 +31,18 @@ cj-harness/
 │   │   ├── followup/          # PR 후속 처리
 │   │   ├── review/            # PR 리뷰
 │   │   └── prd-interview/     # 신규 기능 기획 인터뷰
-│   ├── hooks/
+│   ├── hooks/                # → 대상의 .claude/hooks/
 │   │   ├── validate-git.sh    # 보호 브랜치 / force push / 머지된 PR 차단
 │   │   └── validate-aws.sh    # AWS MCP --profile read-only 강제 (옵션)
-│   └── settings.json         # 기본 settings
+│   ├── settings.json         # 기본 settings  → 대상의 .claude/settings.json
+│   ├── project.example.json  # 프로젝트 설정 예시  → 대상의 .claude/project.json (install.sh 가 인터랙티브 생성)
+│   ├── AGENTS.md             # 협업 규칙 템플릿  → 대상 루트 AGENTS.md
+│   └── CLAUDE.md             # 프로젝트 컨텍스트 템플릿  → 대상 루트 CLAUDE.md
 └── templates/
-    ├── project.example.json  # 프로젝트 설정 예시
-    ├── project.schema.json   # 프로젝트 설정 스키마
-    ├── AGENTS.md             # 협업 규칙 템플릿
-    └── CLAUDE.md             # 프로젝트 컨텍스트 템플릿
+    └── project.schema.json   # 프로젝트 설정 스키마 (참고용 메타 문서 — 대상에는 복사 안 됨)
 ```
+
+> cj-harness 자체에는 `.claude/` 가 없다 (의도적). 페이로드는 `payload/` 라는 평범한 디렉토리에 있어 `ls` 로 다 보이고 의미가 명확하다. 추후 하네스 자체를 손볼 때 쓸 에이전트·스킬이 생기면 그제서야 `.claude/` 를 만든다.
 
 ---
 
@@ -48,7 +50,7 @@ cj-harness/
 
 브랜치명·테스트 명령·디렉토리 구조 등 **프로젝트별로 달라지는 모든 값**은 프로젝트 루트의 `.claude/project.json` 에 정의한다. 모든 에이전트와 스킬은 이 파일을 읽어 동작하므로, 하네스 자체는 손댈 필요 없다.
 
-예시 (`templates/project.example.json` 참고):
+예시 (`payload/project.example.json` 참고):
 
 ```json
 {
