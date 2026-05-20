@@ -1,0 +1,73 @@
+{
+  "$schema": "../project.schema.json",
+  "_comment": "프로젝트 루트의 .claude/project.json 으로 복사해서 값을 채워라. 모든 필드는 옵셔널 — 누락 시 기본값이 적용된다. 기본값은 project.schema.json 참고.",
+
+  "name": "my-project",
+  "language": "ko",
+
+  "git": {
+    "baseBranch": "main",
+    "stagingBranch": null,
+    "protectedBranches": ["main"],
+    "workTreeDir": ".worktrees",
+    "branchPrefix": {
+      "feature": "feature/",
+      "hotfix": "hotfix/",
+      "meta": "meta/"
+    },
+    "symlinkFromMain": [
+      ".claude/settings.local.json"
+    ]
+  },
+
+  "paths": {
+    "docs": "docs",
+    "decisions": "docs/decisions",
+    "prd": "docs/PRD.md",
+
+    "implementation": ["src/**", "app/**", "components/**", "lib/**"],
+    "tests": {
+      "unit": "tests/unit",
+      "integration": "tests/integration",
+      "e2e": "e2e/tests"
+    },
+    "testGlobs": [
+      "tests/**",
+      "e2e/**",
+      "vitest.config.*",
+      "playwright.config.*"
+    ]
+  },
+
+  "commands": {
+    "test": "npm test",
+    "testUnit": null,
+    "testIntegration": null,
+    "testE2e": null,
+    "lint": "npm run lint",
+    "typecheck": null,
+    "build": "npm run build"
+  },
+
+  "docs": {
+    "claudeMdFactSectionHint": "사실 영역 — 스택 / 디렉토리 / 데이터 모델 / 사이트맵 / 환경 변수",
+    "claudeMdPolicySectionHint": "정책 영역 — 컨셉 / 코딩 컨벤션 / 워크플로우 / 금지 / 결정 로그 운영"
+  },
+
+  "gates": {
+    "designer": true,
+    "tdd": true,
+    "peerReview": true
+  },
+
+  "pr": {
+    "titleMaxChars": 70,
+    "mergeStrategy": "squash"
+  },
+
+  "hooks": {
+    "aws": {
+      "requireReadOnlyProfile": false
+    }
+  }
+}

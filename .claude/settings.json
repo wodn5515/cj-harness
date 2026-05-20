@@ -1,0 +1,50 @@
+{
+  "_comment": "claude-harness 기본 settings.json. 프로젝트별 보호 브랜치 세밀 조정은 .claude/project.json 의 git.protectedBranches 에서. 여기 deny 목록은 보수적 안전망 — 실제 동적 판단은 validate-git.sh 가 수행한다.",
+  "permissions": {
+    "deny": [
+      "Bash(git push * main)",
+      "Bash(git push * main *)",
+      "Bash(git push * master)",
+      "Bash(git push * master *)",
+      "Bash(git push * stage)",
+      "Bash(git push * stage *)",
+      "Bash(git push * staging)",
+      "Bash(git push * staging *)",
+      "Bash(git push * production)",
+      "Bash(git push * production *)",
+      "Bash(git push * prod)",
+      "Bash(git push * prod *)",
+      "Bash(git push --force *)",
+      "Bash(git push * --force *)",
+      "Bash(git reset --hard *)",
+      "Bash(gh pr merge *)"
+    ]
+  },
+  "hooks": {
+    "PreToolUse": [
+      {
+        "matcher": "Bash",
+        "if": "Bash(git *)",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.claude/hooks/validate-git.sh",
+            "timeout": 5,
+            "statusMessage": "git 명령어 검증 중..."
+          }
+        ]
+      },
+      {
+        "matcher": "mcp__aws__call_aws",
+        "hooks": [
+          {
+            "type": "command",
+            "command": "./.claude/hooks/validate-aws.sh",
+            "timeout": 5,
+            "statusMessage": "AWS 프로파일 검증 중..."
+          }
+        ]
+      }
+    ]
+  }
+}

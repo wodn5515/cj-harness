@@ -1,0 +1,17 @@
+# 하네스 자체 작업 산출물
+.DS_Store
+
+# Claude Code 로컬 설정 (사용자별)
+.claude/settings.local.json
+
+# 시험 설치 산출물 (있다면 — 일반적으로는 별도 경로에 설치)
+.worktrees/
+
+# 에디터/IDE
+.vscode/
+.idea/
+
+# 임시 파일
+*.swp
+*.bak
+*~
