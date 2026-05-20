@@ -185,11 +185,17 @@ if echo "$COMMAND" | grep -qE '\bgit[[:space:]]+push\b'; then
   fi
 
   # 4) 보호 브랜치가 아니면 머지된 PR 여부 확인
-  if [ -n "$BRANCH" ] && command -v gh >/dev/null 2>&1; then
-    MERGED_PR=$(gh pr list --head "$BRANCH" --state merged --json number --jq '.[0].number // empty' 2>/dev/null)
-    if [ -n "$MERGED_PR" ]; then
-      echo "🔴 차단: 브랜치 '$BRANCH' 의 PR #$MERGED_PR 은 이미 머지되었습니다. 새 브랜치를 생성하세요." >&2
-      exit 2
+  #    중요: gh CLI 는 cwd 의 git remote 를 기준으로 동작하므로, 반드시
+  #    payload 의 cwd 로 진입해 호출한다. 그러지 않으면 다른 repo (예: 메인 세션
+  #    이 있는 워킹디렉토리) 의 머지된 PR 로 오탐이 발생한다.
+  if [ -n "$BRANCH" ] && [ -n "$CWD" ] && [ -d "$CWD" ] && command -v gh >/dev/null 2>&1; then
+    # remote 가 설정 안 된 fresh repo 면 skip (gh 가 에러를 내고 끝남)
+    if git -C "$CWD" remote get-url origin >/dev/null 2>&1; then
+      MERGED_PR=$(cd "$CWD" && gh pr list --head "$BRANCH" --state merged --json number --jq '.[0].number // empty' 2>/dev/null)
+      if [ -n "$MERGED_PR" ]; then
+        echo "🔴 차단: 브랜치 '$BRANCH' 의 PR #$MERGED_PR 은 이미 머지되었습니다. 새 브랜치를 생성하세요." >&2
+        exit 2
+      fi
     fi
   fi
   # 브랜치 판별 실패 시 조용히 통과 (안전 기본값)
