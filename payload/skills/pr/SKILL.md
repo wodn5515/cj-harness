@@ -39,7 +39,7 @@ jq -r '"feature/meta → \(.git.stagingBranch // .git.baseBranch)", "hotfix → 
 
 ### 4. remote push
 ```bash
-git push -u origin <현재브랜치>
+git push -u origin HEAD
 ```
 
 ### 5. PR 생성

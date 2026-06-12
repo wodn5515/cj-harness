@@ -187,8 +187,11 @@ TeamDelete()
 #### B-2. 워크트리 + 로컬 브랜치 정리
 
 ```bash
-git worktree remove <매칭된 워크트리 경로>
-git branch -d <headRefName>
+BR=$(gh pr view $0 --json headRefName -q .headRefName)
+# 브랜치명으로 워크트리 경로 역추적 (porcelain 출력에서 branch 매칭)
+WT=$(git worktree list --porcelain | awk -v b="refs/heads/$BR" '/^worktree /{p=$2} $0=="branch "b{print p}')
+[ -n "$WT" ] && git worktree remove "$WT"
+git branch -d "$BR"
 ```
 
 `-d` 가 "브랜치 머지 안 됨" 사유로 실패하면 사용자에게 알리고 멈춘다. `-D` 강제 삭제는 사용자 명시 동의 후에만.

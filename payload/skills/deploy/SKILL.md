@@ -26,6 +26,8 @@ gh pr list --base ${BASE} --head ${STAGE} --state open
 
 ### base ↔ staging diff 확인
 ```bash
+BASE=$(jq -r '.git.baseBranch' .claude/project.json)
+STAGE=$(jq -r '.git.stagingBranch' .claude/project.json)
 git fetch origin
 git log --oneline origin/${BASE}..origin/${STAGE}
 git diff --stat origin/${BASE}..origin/${STAGE} | tail -3
@@ -38,6 +40,8 @@ git diff --stat origin/${BASE}..origin/${STAGE} | tail -3
 
 ### 포함되는 PR 목록 추출
 ```bash
+BASE=$(jq -r '.git.baseBranch' .claude/project.json)
+STAGE=$(jq -r '.git.stagingBranch' .claude/project.json)
 git log --oneline origin/${BASE}..origin/${STAGE} | grep -oE '\(#[0-9]+\)' | tr -d '()#' | sort -u
 ```
 
@@ -59,6 +63,8 @@ git log --oneline origin/${BASE}..origin/${STAGE} | grep -oE '\(#[0-9]+\)' | tr 
 
 ### Destructive SQL 검사 (마이그레이션 있는 프로젝트)
 ```bash
+BASE=$(jq -r '.git.baseBranch' .claude/project.json)
+STAGE=$(jq -r '.git.stagingBranch' .claude/project.json)
 # 마이그레이션 디렉토리 경로는 프로젝트마다 다름 — 보통 supabase/migrations, prisma/migrations, migrations 등
 MIG_DIR=$(jq -r '.paths.migrations // "supabase/migrations"' .claude/project.json 2>/dev/null)
 git diff origin/${BASE}..origin/${STAGE} -- "${MIG_DIR}/" 2>/dev/null \
@@ -69,6 +75,8 @@ git diff origin/${BASE}..origin/${STAGE} -- "${MIG_DIR}/" 2>/dev/null \
 
 ### 환경변수 변경 검사
 ```bash
+BASE=$(jq -r '.git.baseBranch' .claude/project.json)
+STAGE=$(jq -r '.git.stagingBranch' .claude/project.json)
 git diff origin/${BASE}..origin/${STAGE} -- CLAUDE.md README.md docs/ \
   | grep -iE '^[+-].*(_KEY|_EMAIL|_URL|_TOKEN|_SECRET|env|NEXT_PUBLIC_|PUBLIC_|PRIVATE_)'
 ```
@@ -77,6 +85,8 @@ git diff origin/${BASE}..origin/${STAGE} -- CLAUDE.md README.md docs/ \
 
 ### 결정 로그 추출
 ```bash
+BASE=$(jq -r '.git.baseBranch' .claude/project.json)
+STAGE=$(jq -r '.git.stagingBranch' .claude/project.json)
 DEC=$(jq -r '.paths.decisions // "docs/decisions"' .claude/project.json)
 git diff --name-only origin/${BASE}..origin/${STAGE} -- "${DEC}/"
 ```

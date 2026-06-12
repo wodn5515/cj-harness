@@ -55,7 +55,9 @@ git worktree add -b "${HP}$0" "${WD}/${HP_DIR}$0" "origin/${BASE}"
 ### gitignored 파일 심링크 (필수)
 
 ```bash
-WORKTREE="${WD}/${HP_DIR}$0"
+HP=$(jq -r '.git.branchPrefix.hotfix // "hotfix/"' .claude/project.json)
+WD=$(jq -r '.git.workTreeDir // ".worktrees"' .claude/project.json)
+WORKTREE="${WD}/${HP//\//-}$0"
 for f in $(jq -r '.git.symlinkFromMain[]' .claude/project.json 2>/dev/null); do
   mkdir -p "$WORKTREE/$(dirname "$f")"
   ln -sf "$(pwd)/$f" "$WORKTREE/$f"

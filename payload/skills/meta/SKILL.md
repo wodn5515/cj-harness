@@ -66,7 +66,9 @@ git worktree add -b "${MP}$0" "${WD}/${MP_DIR}$0" "origin/${BASE_REMOTE}"
 
 ### gitignored 파일 심링크
 ```bash
-WORKTREE="${WD}/${MP_DIR}$0"
+MP=$(jq -r '.git.branchPrefix.meta // "meta/"' .claude/project.json)
+WD=$(jq -r '.git.workTreeDir // ".worktrees"' .claude/project.json)
+WORKTREE="${WD}/${MP//\//-}$0"
 for f in $(jq -r '.git.symlinkFromMain[]' .claude/project.json 2>/dev/null); do
   mkdir -p "$WORKTREE/$(dirname "$f")"
   ln -sf "$(pwd)/$f" "$WORKTREE/$f"
@@ -100,7 +102,8 @@ remote 가 비어 있거나 첫 push 전이면 워크트리를 생성할 수 없
 ## 4단계: PR 생성
 
 ```!
-git push -u origin meta/$0
+MP=$(jq -r '.git.branchPrefix.meta // "meta/"' .claude/project.json)
+git push -u origin "${MP}$0"
 ```
 
 `/pr` 스킬 호출. PR 본문 템플릿은 `/pr` 기본 형식을 따르되 다음 섹션 명시:
