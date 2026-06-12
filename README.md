@@ -192,6 +192,22 @@ HARNESS_TEST_CMD="pnpm test" \
 
 ## 업데이트
 
+**설치한 방법과 같은 진입점으로 업데이트한다.** 어느 쪽이든 갱신 대상은 `.claude/` 의 `skills/`·`agents/`·`hooks/` 뿐이고, `project.json`·`settings.json`·`CLAUDE.md`·`AGENTS.md` 는 **건드리지 않는다** (프로젝트별 설정·컨텍스트 보존).
+
+### 방법 1 — AI 진입점 (`깔아줘` 로 설치한 경우)
+
+AI 진입점 설치는 임시 디렉토리에 clone 후 `rm -rf` 하므로 **로컬에 `install.sh` 사본이 남지 않는다.** 따라서 업데이트도 설치와 똑같이 Claude Code 안에서 한 줄:
+
+```
+cj-harness 스킬 최신으로 업데이트해줘 — https://github.com/wodn5515/cj-harness
+```
+
+AI 가 다시 clone → `.claude/skills/`·`agents/`·`hooks/` 만 덮어쓰고 설정·컨텍스트 파일은 보존. 끝나면 **세션 재시작**해야 갱신된 스킬이 로드된다.
+
+> `git clone --depth 1` 은 기본 브랜치(`main`)를 가져온다. 머지 전 PR 의 수정을 미리 받으려면 "브랜치 `<브랜치명>` 에서 가져와 `.claude/skills/` 덮어써줘" 처럼 브랜치를 명시한다.
+
+### 방법 2 — 셸 진입점 (`install.sh` 를 clone 해둔 경우)
+
 ```bash
 cd ~/cj-harness
 git pull                              # 하네스 자체 업데이트
@@ -201,7 +217,7 @@ cd /path/to/project
 ~/cj-harness/install.sh --update      # agents/skills/hooks 갱신 (settings·project.json 건드리지 않음)
 ```
 
-심링크로 설치한 프로젝트는 `git pull` 만으로 자동 반영.
+`--symlink` 로 설치한 프로젝트는 `git pull` 만으로 자동 반영.
 
 ---
 
