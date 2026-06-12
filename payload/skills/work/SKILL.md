@@ -57,7 +57,9 @@ cat .claude/project.json 2>/dev/null || echo "⚠️ .claude/project.json 없음
 git worktree list
 ```
 ```!
-ls -1 <workTreeDir> 2>/dev/null
+FP=$(jq -r '.git.branchPrefix.feature // "feature/"' .claude/project.json)
+WD=$(jq -r '.git.workTreeDir // ".worktrees"' .claude/project.json)
+ls -1 "$WD" 2>/dev/null | grep -E "^${FP//\//-}"
 ```
 
 ### 관련 PR 확인
@@ -82,8 +84,14 @@ git fetch origin
 ```
 
 ```bash
-mkdir -p <workTreeDir>
-git worktree add -b <featurePrefix>$0 <workTreeDir>/<featurePrefix-base>$0 origin/<staging>
+BASE=$(jq -r '.git.baseBranch // "main"' .claude/project.json)
+STAGE=$(jq -r '.git.stagingBranch // empty' .claude/project.json); STAGE=${STAGE:-$BASE}
+FP=$(jq -r '.git.branchPrefix.feature // "feature/"' .claude/project.json)
+WD=$(jq -r '.git.workTreeDir // ".worktrees"' .claude/project.json)
+FP_DIR=${FP//\//-}   # feature/ → feature-
+
+mkdir -p "$WD"
+git worktree add -b "${FP}$0" "${WD}/${FP_DIR}$0" "origin/${STAGE}"
 ```
 
 > `<featurePrefix-base>` 는 prefix 의 `/` 을 `-` 로 치환한 dir 친화 이름 (예: `feature/` → `feature-`).
@@ -93,7 +101,9 @@ git worktree add -b <featurePrefix>$0 <workTreeDir>/<featurePrefix-base>$0 origi
 `project.json` 의 `git.symlinkFromMain` 배열에 있는 파일들을 메인 워킹트리에서 워크트리로 심링크한다. tracked 파일 (이미 git 이 처리) 은 심링크할 필요 없다.
 
 ```bash
-WORKTREE="<workTreeDir>/<featurePrefix-base>$0"
+FP=$(jq -r '.git.branchPrefix.feature // "feature/"' .claude/project.json)
+WD=$(jq -r '.git.workTreeDir // ".worktrees"' .claude/project.json)
+WORKTREE="${WD}/${FP//\//-}$0"
 for f in $(jq -r '.git.symlinkFromMain[]' .claude/project.json 2>/dev/null); do
   # 디렉토리 보장
   mkdir -p "$WORKTREE/$(dirname "$f")"
@@ -251,8 +261,10 @@ TeamDelete()
 
 PR 머지 + 팀 종료 후:
 ```bash
-git worktree remove <workTreeDir>/<featurePrefix-base>$0
-git branch -d <featurePrefix>$0
+FP=$(jq -r '.git.branchPrefix.feature // "feature/"' .claude/project.json)
+WD=$(jq -r '.git.workTreeDir // ".worktrees"' .claude/project.json)
+git worktree remove "${WD}/${FP//\//-}$0"
+git branch -d "${FP}$0"
 ```
 
 ---
@@ -263,7 +275,8 @@ git branch -d <featurePrefix>$0
 
 ### NNN 결정
 ```!
-ls <decisionsDir>/ 2>/dev/null | grep -E '^[0-9]+-' | sort | tail -1
+DEC=$(jq -r '.paths.decisions // "docs/decisions"' .claude/project.json)
+ls "$DEC"/ 2>/dev/null | grep -E '^[0-9]+-' | sort | tail -1
 ```
 가장 큰 번호 + 1 (3 자리 zero-padding). 첫 작업이면 `001`.
 
