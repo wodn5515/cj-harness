@@ -44,7 +44,7 @@
 
 ## 2. Lead 자율 판단 + 결정 로그 (핵심 원칙)
 
-이 협업 모델은 **사용자 승인 게이트가 없다**. 작업 중 발생하는 모든 비자명한 판단은 **Lead (메인 세션) 에이전트가 자율적으로 결정**하고, 그 즉시 `<paths.decisions>/<NNN>-<slug>.md` 에 결정 로그를 남긴다.
+이 협업 모델은 **사용자 승인 게이트가 없다**. 작업 중 발생하는 모든 비자명한 판단은 **Lead (메인 세션) 에이전트가 자율적으로 결정**하고, 그 즉시 `<paths.decisions>/<slug>.md` 에 결정 로그를 남긴다.
 
 ### 2-1. Lead 의 권한과 책임
 
@@ -55,10 +55,12 @@
 
 ### 2-2. 결정 로그 작성 의무
 
-- 비자명한 결정이 생긴 **그 작업의 커밋 안에** `<paths.decisions>/<NNN>-<slug>.md` 를 추가한다 (별도 PR 금지)
-- 다음 NNN 은 `ls <paths.decisions>/ | grep -E '^[0-9]+-' | sort | tail -1` 로 확인 후 +1
-- 템플릿: 배경 / 결정 / 근거 / 거절된 대안 / 후속 영향
-- PR 본문에 "관련 결정 로그: `<paths.decisions>/<NNN>-<slug>.md`" 한 줄로 링크
+- 비자명한 결정이 생긴 **그 작업의 커밋 안에** `<paths.decisions>/<slug>.md` 를 추가한다 (별도 PR 금지)
+- **파일명 = 서술적 kebab-case slug, 번호 없음** (예: `multi-device-push.md`). 본문 첫머리에 `- 날짜: YYYY-MM-DD` 를 적어 시간순을 남긴다 — 번호 대신 날짜·git 히스토리가 순서. 같은 slug 가 이미 있으면 더 구체적으로(`-server`/`-app`/`-v2` 등) 짓는다.
+  - **순차 번호(NNN) 폐지 사유**: 병렬 세션이 동시에 같은 "다음 번호"를 선점해 충돌이 반복됨(번호 예약/리넘버 churn). slug 는 서술적이라 동시 작성해도 충돌하지 않는다.
+  - **기존 `NNN-<slug>.md` 는 grandfather** — 리네임하지 않고 그대로 둔다. 디렉토리는 구(`NNN-`)·신(slug) 혼재가 정상. 구 결정 참조는 "decision NNN" 유지, 신규는 slug 로 참조("decision: <slug>").
+- 템플릿: 날짜 / 배경 / 결정 / 근거 / 거절된 대안 / 후속 영향
+- PR 본문에 "관련 결정 로그: `<paths.decisions>/<slug>.md`" 한 줄로 링크
 
 ### 2-3. 기록할 결정의 예
 
@@ -97,7 +99,7 @@
   → 새 테스트 모두 빨갛게 실패해야 함
   ↓
 [Lead 검토] spec 시나리오와 검증 포인트를 Lead 가 판단 → 채택 결정을
-            <paths.decisions>/<NNN>-<slug>.md 에 기록
+            <paths.decisions>/<slug>.md 에 기록
   ↓
 [라운드 2] worker 구현
   ├── 구현 코드 작성
@@ -114,7 +116,7 @@
 ### 3-3. spec 약화는 Lead 가 결정
 
 worker 가 구현 중 "이 spec 은 통과 불가능하거나 의도와 맞지 않다" 고 판단하면 `SendMessage` 로 Lead 에 보고한다. **Lead 가 자율적으로** spec 유지/약화/강화를 판단하고:
-- 결정을 `<paths.decisions>/<NNN>-<slug>.md` 에 추가
+- 결정을 `<paths.decisions>/<slug>.md` 에 추가
 - 약화/수정이면 `test-writer` 단발 재호출로 spec 갱신
 - worker 재진입
 
@@ -207,7 +209,7 @@ Agent({
 })
 ```
 
-`team_name` 없이 단발로 호출. 보고를 받으면 Lead 가 spec 을 검토하고 채택/수정/거절 판단을 내린 뒤 `<paths.decisions>/<NNN>-<slug>.md` 에 결정 로그를 추가.
+`team_name` 없이 단발로 호출. 보고를 받으면 Lead 가 spec 을 검토하고 채택/수정/거절 판단을 내린 뒤 `<paths.decisions>/<slug>.md` 에 결정 로그를 추가.
 
 ### 5-4. 디자이너 게이트 (선택)
 
@@ -225,7 +227,7 @@ Agent({
 호출 흐름:
 1. Lead 가 `Agent(subagent_type: "designer", ...)` 로 단발 호출 (team_name·name 없음)
 2. designer 가 UI 컴포넌트 구현 + 커밋 (`[ui]` prefix)
-3. designer 종료 → Lead 가 결과 검토 + 디자인 톤 채택 결정을 `<paths.decisions>/<NNN>-<slug>.md` 에 기록
+3. designer 종료 → Lead 가 결과 검토 + 디자인 톤 채택 결정을 `<paths.decisions>/<slug>.md` 에 기록
 4. **이후 §5-1 의 4 단계 (TDD 게이트) 로 진입** — test-writer 가 designer 가 만든 UI 위에 테스트 선작성
 5. 팀 spawn → worker 가 데이터 페칭 · 서버 액션 · 이벤트 핸들러 등 결합
 
@@ -334,7 +336,7 @@ designer 는 **UI 구현만** 한다. 데이터 로직 · 테스트는 worker / 
 - 머지된 브랜치에 추가 push
 - 열린 PR 있는데 같은 주제로 새 PR 생성
 - AWS MCP 호출 시 `--profile read-only` 누락 (훅 활성화 시 차단)
-- **비자명한 결정을 내리고도 `<paths.decisions>/<NNN>-<slug>.md` 미작성**
+- **비자명한 결정을 내리고도 `<paths.decisions>/<slug>.md` 미작성**
 - **사용자에게 결정 승인을 구해 작업이 멈춤** (§2 원칙: Lead 자율 판단)
 
 ### 9-2. Lead 한정

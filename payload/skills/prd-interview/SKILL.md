@@ -20,7 +20,7 @@ A depth-first, mind-map style interview that turns a vague service or feature id
 - Existing PRD/decisions/codebase to respect
 - Skip already-decided things (auth, stack, brand, deployment)
 - Focus only on what's new for this feature
-- Output: `<paths.docs>/features/<slug>.md` (feature spec) + `<paths.decisions>/<NNN>-<slug>.md` (decision log)
+- Output: `<paths.docs>/features/<slug>.md` (feature spec) + `<paths.decisions>/<slug>.md` (decision log)
 
 ### How to detect mode
 
@@ -210,10 +210,10 @@ Plus `<paths.decisions>/000-initial-decisions.md` (chronological-by-topic).
 
 ## References
 - Related PRD section: §X.Y
-- Related decisions: NNN-…
+- Related decisions: <slug>
 ```
 
-Plus a **decision log entry** at `<paths.decisions>/<NNN>-<slug>.md` (next available NNN, zero-padded). Capture each non-obvious decision with rationale + alternatives rejected. Keep brownfield decision logs short — 1–3 decisions usually.
+Plus a **decision log entry** at `<paths.decisions>/<slug>.md` (descriptive slug, no number — see AGENTS.md §2-2). Capture each non-obvious decision with rationale + alternatives rejected. Keep brownfield decision logs short — 1–3 decisions usually.
 
 ---
 

@@ -45,7 +45,7 @@ Non-goal (의도적 제외, V1):
 ├── .claude/             # 하네스 (agents·skills·hooks + project.json)
 ├── docs/
 │   ├── PRD.md
-│   └── decisions/       # 결정 로그 NNN-<slug>.md
+│   └── decisions/       # 결정 로그 <slug>.md
 ├── <src 또는 app/>      # 구현 코드
 ├── <components/>        # UI 컴포넌트 (있으면)
 ├── <lib/>               # 유틸·도메인 헬퍼 (있으면)
@@ -138,7 +138,7 @@ Non-goal (의도적 제외, V1):
 
 ## 12. 결정 로그 운영 (정책 영역)
 
-작업 중 발생하는 모든 비자명한 판단은 **Lead 에이전트가 자율적으로 결정**하고 그 즉시 `<paths.decisions>/<NNN>-<slug>.md` 로 기록한다. 사용자에게 매번 물어 승인을 받는 흐름이 아니다.
+작업 중 발생하는 모든 비자명한 판단은 **Lead 에이전트가 자율적으로 결정**하고 그 즉시 `<paths.decisions>/<slug>.md` 로 기록한다. 사용자에게 매번 물어 승인을 받는 흐름이 아니다.
 
 자세한 형식은 [`AGENTS.md`](./AGENTS.md) §2.
 

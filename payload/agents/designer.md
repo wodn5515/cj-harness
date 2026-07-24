@@ -26,7 +26,7 @@ Lead (메인 세션) 가 **단발로** 호출한다. 팀 멤버가 아니며 `te
 > `project.json` 의 `gates.designer` 가 `false` 면 디자이너 게이트 자체가 비활성 — UI 비중과 무관하게 worker 가 직접 처리. CLI / 라이브러리 / 백엔드만 있는 프로젝트가 여기 해당.
 
 designer 종료 후 **반드시 후속 라운드**가 따라온다:
-1. Lead 가 designer 결과를 검토하고 UI 톤·컴포넌트 골격 채택 결정을 `<paths.decisions>/<NNN>-<slug>.md` 에 기록 (사용자에게 묻지 않고 자율 판단)
+1. Lead 가 designer 결과를 검토하고 UI 톤·컴포넌트 골격 채택 결정을 `<paths.decisions>/<slug>.md` 에 기록 (사용자에게 묻지 않고 자율 판단)
 2. test-writer 가 designer 가 만든 UI 위에 E2E + 단위 렌더링 테스트 선작성
 3. worker 팀이 spawn 되어 데이터 페칭·이벤트 핸들러·서버 액션 등을 결합 + 테스트 통과 + PR
 

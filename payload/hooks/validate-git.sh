@@ -46,6 +46,27 @@ fi
 CWD=$(echo "$INPUT" | jq -r '.cwd // empty' 2>/dev/null)
 
 # ----------------------------------------------------------------------
+# 실제 대상 디렉토리 보정 (워크트리 오탐 방지)
+# ----------------------------------------------------------------------
+# payload .cwd 는 세션 cwd (흔히 메인 체크아웃 = 보호 브랜치 main) 다. 명령이
+# `git -C <dir>` 또는 `cd <dir> && ...` 로 다른 디렉토리(워크트리)를 대상으로 하면
+# 그 디렉토리 기준으로 branch/toplevel/gh 를 판정해야, 워크트리에서 브랜치 미지정으로
+# `cd <wt> && git push` 시 현재 브랜치를 main 으로 오판해 막던 오탐을 방지한다.
+TARGET_DIR=$(echo "$COMMAND" | sed -nE 's/.*git[[:space:]]+-C[[:space:]]+([^[:space:]]+).*/\1/p' | head -1)
+if [ -z "$TARGET_DIR" ]; then
+  TARGET_DIR=$(echo "$COMMAND" | sed -nE 's/(^|[;&|][[:space:]]*)cd[[:space:]]+([^[:space:];&|]+).*/\2/p' | head -1)
+fi
+if [ -n "$TARGET_DIR" ]; then
+  case "$TARGET_DIR" in
+    /*) ;;                                              # 절대경로 그대로
+    "~"/*) TARGET_DIR="$HOME/${TARGET_DIR#\~/}" ;;     # ~ 확장
+    *) [ -n "$CWD" ] && TARGET_DIR="$CWD/$TARGET_DIR" ;; # 상대 → payload cwd 기준
+  esac
+  # 유효한 디렉토리일 때만 보정 (아니면 payload cwd 유지)
+  [ -d "$TARGET_DIR" ] && CWD="$TARGET_DIR"
+fi
+
+# ----------------------------------------------------------------------
 # 보호 브랜치 목록 결정 (project.json → 기본값 fallback)
 # ----------------------------------------------------------------------
 # project.json 위치: cwd 의 git toplevel/.claude/project.json

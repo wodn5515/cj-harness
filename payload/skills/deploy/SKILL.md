@@ -167,7 +167,7 @@ PR 본문에 명시된 사용자 측 수동 검증 항목 모음:
 ## 관련 결정 로그 / docs
 
 <paths.decisions 변경 파일 링크>
-- [`<paths.decisions>/<NNN-slug>.md`](https://github.com/<owner>/<repo>/blob/<staging>/<paths.decisions>/<NNN-slug>.md) — <한 줄 제목>
+- [`<paths.decisions>/<slug>.md`](https://github.com/<owner>/<repo>/blob/<staging>/<paths.decisions>/<slug>.md) — <한 줄 제목>
 
 <PRD / CLAUDE.md / README 변경 영역>
 - <변경 요약>
