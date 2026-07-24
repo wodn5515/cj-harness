@@ -71,7 +71,7 @@
         },
         "decisions": {
           "type": "string",
-          "description": "결정 로그 디렉토리. Lead 가 비자명한 결정을 NNN-slug.md 로 추가하는 곳.",
+          "description": "결정 로그 디렉토리. Lead 가 비자명한 결정을 <slug>.md (번호 없는 서술적 kebab slug) 로 추가하는 곳.",
           "default": "docs/decisions"
         },
         "prd": {

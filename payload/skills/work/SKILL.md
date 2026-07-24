@@ -127,7 +127,7 @@ Agent({
 })
 ```
 
-team_name·name 없이 단발 호출. designer 가 보고하면 **Lead 가 자율적으로** UI 톤·컴포넌트 골격을 채택할지 판단하고, 비자명한 결정을 `<decisionsDir>/<NNN>-<slug>.md` 에 기록한 뒤 2.5단계로 넘어간다. 사용자에게 묻지 않는다.
+team_name·name 없이 단발 호출. designer 가 보고하면 **Lead 가 자율적으로** UI 톤·컴포넌트 골격을 채택할지 판단하고, 비자명한 결정을 `<decisionsDir>/<slug>.md` 에 기록한 뒤 2.5단계로 넘어간다. 사용자에게 묻지 않는다.
 
 ## 2.5단계: TDD 게이트 (사용자 행동 흐름이 바뀌는 작업이면 필수)
 
@@ -170,7 +170,7 @@ test-writer 가 spec 과 실패 로그를 보고하면 **Lead 가 자율적으�
 - 시나리오 수정이 필요하면 test-writer 를 재호출해 spec 갱신 → 결정 로그에 수정 사유 기록
 - spec 이 너무 강하면 약화, 너무 약하면 강화 — 모두 Lead 판단
 
-결정 로그는 `<decisionsDir>/<NNN>-<slug>.md` 로 그 작업 워크트리에 추가한다.
+결정 로그는 `<decisionsDir>/<slug>.md` 로 그 작업 워크트리에 추가한다.
 
 ### 3단계 팀 spawn 시 worker 프롬프트에 포함할 사항 (TDD 게이트를 통과한 경우)
 
@@ -236,7 +236,7 @@ worker 가 PR 생성 보고를 보내면:
 
 리뷰 코멘트가 달리면 Lead 가 다음 중 하나로 진행한다:
 1. Lead 가 `gh pr view <번호> --comments` 로 코멘트를 읽고 자율 판단으로 우선순위와 적용 방향을 정함 → 요약·우선순위와 함께 `SendMessage(to: "worker", ...)` 로 전달
-2. 반영 방향이 비자명한 결정이면 결정 로그에 추가 (`<decisionsDir>/<NNN>-<slug>.md` 에 "## 리뷰 응대" 섹션 append)
+2. 반영 방향이 비자명한 결정이면 결정 로그에 추가 (`<decisionsDir>/<slug>.md` 에 "## 리뷰 응대" 섹션 append)
 3. worker 가 수정 → lint·sfx 재검증 → 추가 커밋 push → Lead 에 보고
 4. 추가 라운드가 필요하면 3-5 반복
 
@@ -271,14 +271,12 @@ git branch -d "${FP}$0"
 
 ## 부록: 결정 로그 작성 (Lead 의무)
 
-작업 흐름 곳곳에서 Lead 가 비자명한 결정을 내릴 때마다 `<decisionsDir>/<NNN>-<slug>.md` 로 기록한다.
+작업 흐름 곳곳에서 Lead 가 비자명한 결정을 내릴 때마다 `<decisionsDir>/<slug>.md` 로 기록한다.
 
-### NNN 결정
-```!
-DEC=$(jq -r '.paths.decisions // "docs/decisions"' .claude/project.json)
-ls "$DEC"/ 2>/dev/null | grep -E '^[0-9]+-' | sort | tail -1
-```
-가장 큰 번호 + 1 (3 자리 zero-padding). 첫 작업이면 `001`.
+### 파일명 = slug (번호 없음)
+서술적 kebab-case slug 로 짓는다 — **번호 없음** (예: `multi-device-push.md`). 본문 첫머리에 `- 날짜: YYYY-MM-DD` 로 순서를 남긴다 (번호 대신 날짜·git 히스토리가 순서).
+- 순차 번호(NNN)는 병렬 세션이 같은 "다음 번호"를 동시 선점하는 충돌로 폐지 — 근거는 `AGENTS.md` §2-2.
+- 기존 `NNN-*.md` 는 grandfather (리네임 금지, 그대로). 같은 slug 가 이미 있으면 더 구체적으로 (`-server`/`-app` 등).
 
 ### 작성 시점
 - TDD 게이트에서 spec 채택/수정/거절 판단을 내린 직후
@@ -288,7 +286,7 @@ ls "$DEC"/ 2>/dev/null | grep -E '^[0-9]+-' | sort | tail -1
 - 리뷰 코멘트 응대 방향이 비자명한 경우
 
 ### 작성 위치
-그 작업의 워크트리에서 작업의 커밋 안에 포함시킨다. 별도 PR 로 분리하지 않는다. PR 본문에 "관련 결정 로그: `<decisionsDir>/<NNN>-<slug>.md`" 한 줄로 링크.
+그 작업의 워크트리에서 작업의 커밋 안에 포함시킨다. 별도 PR 로 분리하지 않는다. PR 본문에 "관련 결정 로그: `<decisionsDir>/<slug>.md`" 한 줄로 링크.
 
 ### 사용자 개입 처리
 사용자가 결정에 대해 직접 의견을 주면 (예: "그렇게 말고 X 로 해줘") 결정 파일에 "## 사용자 개입 (<YYYY-MM-DD>)" 섹션을 append 하고 사용자 지시·변경된 결정을 기록한다. 기존 "결정" 을 통째로 덮어쓰지 않는다.

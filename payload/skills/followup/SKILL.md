@@ -196,7 +196,25 @@ git branch -d "$BR"
 
 `-d` 가 "브랜치 머지 안 됨" 사유로 실패하면 사용자에게 알리고 멈춘다. `-D` 강제 삭제는 사용자 명시 동의 후에만.
 
-#### B-3. hotfix 머지였다면 staging 동기화 안내
+#### B-3. 메인 워크트리 baseBranch fast-forward pull
+
+머지된 변경을 로컬 메인 워크트리에 즉시 반영한다. 다음 사이클의 워크트리 생성 (`/work`·`/meta` 의 `git worktree add -b ... origin/<base>`) 은 `origin/<base>` 를 베이스로 삼지만, **로컬 `<base>` 가 뒤처져 있으면 다른 도구·확인 명령이 stale 한 트리를 보여 혼선이 생긴다.** 따라서 머지 직후 한 번 댕겨 둔다.
+
+```bash
+BASE=$(jq -r '.git.baseBranch // "main"' .claude/project.json)
+# 메인 워크트리 (보호 브랜치 = BASE 가 체크아웃된 워크트리) 찾기
+MAIN_WT=$(git worktree list --porcelain | awk -v b="refs/heads/$BASE" '
+  /^worktree /{p=$2}
+  $0=="branch "b{print p; exit}
+')
+[ -n "$MAIN_WT" ] && git -C "$MAIN_WT" pull --ff-only origin "$BASE"
+```
+
+- `--ff-only` 로만 진행 — 메인 워크트리에 로컬 커밋이 있으면 안전하게 실패. 그땐 사용자에게 알리고 멈춘다 (force/merge 금지).
+- 메인 워크트리를 못 찾으면 (현재 세션이 메인 워크트리 안에 있지 않거나 보호 브랜치가 detached) 안내만 하고 skip.
+- 이미 최신이면 git 이 "이미 업데이트 상태입니다" 한 줄 출력 후 종료 — 정상.
+
+#### B-4. hotfix 머지였다면 staging 동기화 안내
 
 `baseRefName` 이 `git.baseBranch` 이고 `headRefName` 이 `git.branchPrefix.hotfix` 패턴이며 `git.stagingBranch` 가 null 이 아니면:
 ```
@@ -205,7 +223,7 @@ hotfix 가 baseBranch 에 머지됨. `/sync` 로 stagingBranch 동기화를 진�
 
 `stagingBranch` 가 null 이면 동기화 불필요 — 안내 생략.
 
-#### B-4. origin 브랜치 정리
+#### B-5. origin 브랜치 정리
 
 GitHub 의 "Automatically delete head branches" 설정이 켜져 있으면 자동 삭제됨. 켜져 있지 않으면 사용자에게 안내만 하고 자동 수행하지 않는다:
 ```

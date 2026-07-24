@@ -66,7 +66,7 @@ PR 제목 / 본문 언어는 `project.json` 의 `language` 따름.
 - 전 레이어 통과: <commands.test> 로그 첨부
 
 ## 결정 로그
-- `<paths.decisions>/<NNN>-<slug>.md` (있으면)
+- `<paths.decisions>/<slug>.md` (있으면)
 
 ## 문서 동기화
 - [x] 사용자 가시 기능·스택·사이트맵·데이터 모델 변경 → README.md / CLAUDE.md 사실 영역 갱신함
@@ -93,7 +93,7 @@ Why this change
 - All layers pass: <commands.test>
 
 ## Decision log
-- `<paths.decisions>/<NNN>-<slug>.md` (if any)
+- `<paths.decisions>/<slug>.md` (if any)
 
 ## Docs sync
 - [x] Updated README / CLAUDE.md fact area

@@ -97,11 +97,15 @@ remote 가 비어 있거나 첫 push 전이면 워크트리를 생성할 수 없
 - 강제 자동화 아님. Lead 가 변경 성격에 맞게 골라서 수행
 
 ### 결정 로그
-비자명한 결정이 발생한 경우 `<paths.decisions>/<NNN>-<slug>.md` 작성. 단순 오타·링크 수정은 불필요. 정책·운영 방침 변경은 필수.
+비자명한 결정이 발생한 경우 `<paths.decisions>/<slug>.md` 작성. 단순 오타·링크 수정은 불필요. 정책·운영 방침 변경은 필수.
 
 ## 4단계: PR 생성
 
-```!
+워크트리에서 변경을 **커밋한 뒤** Lead 가 실행한다 (아래는 `bash` 지시 블록 — 스킬 로드 시
+자동 실행되는 `!` 블록이 아니다. `!` 로 두면 브랜치 생성·커밋 전에 push 가 발화해
+`src refspec ... does not match any` 로 실패한다).
+
+```bash
 MP=$(jq -r '.git.branchPrefix.meta // "meta/"' .claude/project.json)
 git push -u origin "${MP}$0"
 ```
