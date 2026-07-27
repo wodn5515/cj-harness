@@ -122,26 +122,37 @@ worker 가 구현 중 "이 spec 은 통과 불가능하거나 의도와 맞지 �
 
 worker 가 임의로 테스트를 수정하거나 spec 을 우회하는 구현을 하면 안 된다.
 
-## 4. 팀 모드 동작
+## 4. 협업 모드 동작
 
-`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` 이 `.claude/settings.local.json` 에 켜져 있다.
+### 4-0. 실행 모델 (전제)
 
-### 4-1. 표준 팀 구성
+> 아래는 Claude Code **2.1.220 에서 실측 확인**한 동작이다. 어느 버전부터 이 형태인지는 특정하지 않는다.
 
-Lead (메인 세션) 가 `TeamCreate` 후 다음을 spawn:
+- **팀 생성·삭제 단계가 없다.** 세션당 암묵적 팀이 하나 있고 `TeamCreate` / `TeamDelete` 툴은 존재하지 않는다. `Agent` 의 `team_name` 파라미터도 deprecated (무시됨).
+- **이름이 곧 주소다.** `Agent({subagent_type, name: "worker", ...})` 로 spawn 하면 `SendMessage(to: "worker")` 로 통신한다.
+- **완료는 소멸이 아니다.** 할 일이 없는 에이전트는 idle 로 머무는 게 아니라 **완료**된다. 그래도 이름은 유효하며, 이름으로 메시지를 보내면 그 **transcript 가 재개**되어 이전 맥락을 그대로 이어간다.
+- **같은 이름은 최신이 이긴다.** 한 작업 안에서 이름을 재사용하면 이전 에이전트에 도달할 수 없게 된다.
+- `Agent` 는 **기본 백그라운드 실행**. 동기 실행이 필요하면 `run_in_background: false`.
+- **`shutdown_request` 를 먼저 보내지 않는다.** legacy 프로토콜로 분류돼 있고, 요청받지 않은 이상 originate 금지다. 실행 중인 백그라운드 에이전트를 멈춰야 하면 `TaskStop({task_id: "<이름>"})`.
+
+### 4-1. 표준 구성
+
+Lead (메인 세션) 가 다음 3 명을 이름과 함께 spawn:
 - `worker` — 구현
 - `lint` — 린트 검사
 - `sfx` — 사이드이펙트 검사
 
-`test-writer` 는 **팀 멤버가 아니다**. Lead 가 단발 (`Agent` 호출 한 번) 로 호출해 spec 을 잡고, Lead 가 검토한 뒤 결정 로그를 남기고 종료시킨다.
+`lint` 와 `sfx` 를 미리 spawn 하는 목적은 **이름 등록 하나뿐**이다. 이름이 있어야 worker 가 나중에 깨울 수 있다. 두 에이전트는 spawn 직후 곧바로 완료되며 그게 정상 동작이다.
 
-`gates.peerReview = false` 면 팀 spawn 자체를 생략 — Lead 단독 모드. 1 인 빠른 토이 / 매우 단순한 변경만 하는 프로젝트가 여기 해당.
+`test-writer` 는 **peer 검증 흐름의 멤버가 아니다**. Lead 가 이름 없이 단발 (`Agent` 호출 한 번) 로 호출해 spec 을 잡고, Lead 가 검토한 뒤 결정 로그를 남긴다.
+
+`gates.peerReview = false` 면 spawn 자체를 생략 — Lead 단독 모드. 1 인 빠른 토이 / 매우 단순한 변경만 하는 프로젝트가 여기 해당.
 
 ### 4-2. 메시지 규약
 
-- 팀 내 통신은 **`SendMessage(to: "<이름>")`** 으로만. UUID 사용 금지.
-- 이름: `worker`, `lint`, `sfx`, `team-lead` (Lead 자기 자신)
-- **plain text 출력은 다른 팀원에게 전달되지 않는다.** 반드시 `SendMessage` 호출.
+- 통신은 **`SendMessage(to: "<이름>")`** 으로만. agentId 는 이름이 없거나 이름을 뺏긴 경우에만.
+- 이름: `worker`, `lint`, `sfx`. Lead 에게 보낼 때는 incoming message 의 발신자 이름을 그대로 쓴다.
+- **plain text 출력은 다른 에이전트에게 전달되지 않는다.** 반드시 `SendMessage` 호출.
 - `summary` 는 5~10 단어, 본문엔 커밋 SHA · 워크트리 경로 · 요점 포함.
 
 ### 4-3. peer 검증 흐름
@@ -149,7 +160,7 @@ Lead (메인 세션) 가 `TeamCreate` 후 다음을 spawn:
 worker 가 구현 + 커밋 후:
 1. `commands.test` 직접 실행해 통과 확인 (선작성 spec 포함 회귀 없음)
 2. 같은 턴에 `lint` · `sfx` 에게 병렬 `SendMessage` 로 검증 요청
-3. 두 결과 모두 회신받을 때까지 idle
+3. 두 호출을 보낸 뒤 턴을 마친다. 회신은 다음 턴에 자동으로 들어온다
 4. 🔴 must 이슈 있으면 수정 → 새 커밋 → 재검증
 5. 🔴 모두 해소되면 `/pr` 스킬로 PR 생성
 
@@ -163,10 +174,10 @@ worker 가 구현 + 커밋 후:
 2. **워크트리 생성** — `origin/<stagingBranch>` (없으면 `<baseBranch>`) 기반. gitignored 파일은 `git.symlinkFromMain` 에 따라 심링크
 3. **디자이너 게이트** — §5-4 조건 충족 시 `designer` 단발 호출 → UI 구현 커밋 → Lead 가 결과 검토 + 결정 로그 작성 → 종료
 4. **TDD 게이트** — 작업이 사용자 행동 흐름을 바꾸면 `test-writer` 단발 호출 → 선작성 spec → Lead 가 spec 채택 판단 + 결정 로그 작성
-5. **팀 세팅** — `TeamCreate` 후 worker + lint + sfx 병렬 spawn (`gates.peerReview = true` 일 때)
+5. **에이전트 세팅** — worker + lint + sfx 를 이름과 함께 병렬 spawn (`gates.peerReview = true` 일 때). 팀 생성 단계 없음
 6. **작업 진행** — worker 가 구현 → 문서 동기화 판단 → peer 검증 → `/pr`
-7. **리뷰 대기** — PR 생성 후에도 팀 유지. reviewer 가 코멘트 달면 worker 가 응대
-8. **머지 후 정리** — 사용자가 머지하면 `shutdown_request` → `TeamDelete` → `git worktree remove`
+7. **리뷰 대기** — 에이전트는 완료 상태로 들어가지만 이름은 유효. reviewer 가 코멘트 달면 `SendMessage(to: "worker")` 로 재개해 응대
+8. **머지 후 정리** — 사용자가 머지하면 `git worktree remove` + 브랜치 삭제. 별도 종료 절차 없음
 
 ### 5-2. TDD 선작성 강제 케이스
 
@@ -209,7 +220,7 @@ Agent({
 })
 ```
 
-`team_name` 없이 단발로 호출. 보고를 받으면 Lead 가 spec 을 검토하고 채택/수정/거절 판단을 내린 뒤 `<paths.decisions>/<slug>.md` 에 결정 로그를 추가.
+`name` 없이 단발로 호출한다 (이름을 주지 않으면 재개 대상이 아닌 일회성 호출). 보고를 받으면 Lead 가 spec 을 검토하고 채택/수정/거절 판단을 내린 뒤 `<paths.decisions>/<slug>.md` 에 결정 로그를 추가.
 
 ### 5-4. 디자이너 게이트 (선택)
 
@@ -225,7 +236,7 @@ Agent({
 | 마이그레이션, API 라우트 신규 | 불필요 |
 
 호출 흐름:
-1. Lead 가 `Agent(subagent_type: "designer", ...)` 로 단발 호출 (team_name·name 없음)
+1. Lead 가 `Agent(subagent_type: "designer", ...)` 로 단발 호출 (`name` 없음 — 재개 대상 아님)
 2. designer 가 UI 컴포넌트 구현 + 커밋 (`[ui]` prefix)
 3. designer 종료 → Lead 가 결과 검토 + 디자인 톤 채택 결정을 `<paths.decisions>/<slug>.md` 에 기록
 4. **이후 §5-1 의 4 단계 (TDD 게이트) 로 진입** — test-writer 가 designer 가 만든 UI 위에 테스트 선작성
@@ -249,7 +260,7 @@ designer 는 **UI 구현만** 한다. 데이터 로직 · 테스트는 worker / 
 
 판단 한 줄: **"이 문서 갱신이 코드 diff 없이 단독으로 의미가 있는가?"** — 단독 의미 있으면 `/meta`, 코드와 짝이어야 의미 있으면 `/work` 안에서 worker 가.
 
-### 5-6. 팀 spawn 시 worker 프롬프트 필수 포함
+### 5-6. 에이전트 spawn 시 worker 프롬프트 필수 포함
 
 ```
 - 워크트리 경로: <절대경로>
@@ -298,7 +309,7 @@ designer 는 **UI 구현만** 한다. 데이터 로직 · 테스트는 worker / 
 
 | 스킬 | 시점 | 용도 |
 |---|---|---|
-| [`/work`](./.claude/skills/work/SKILL.md) | 새 기능·코드 작업 시작 | 워크트리 + 디자이너·TDD 게이트 + 팀 세팅 |
+| [`/work`](./.claude/skills/work/SKILL.md) | 새 기능·코드 작업 시작 | 워크트리 + 디자이너·TDD 게이트 + 에이전트 세팅 |
 | [`/meta`](./.claude/skills/meta/SKILL.md) | 메타 작업 (문서·설정·.claude) | 워크트리 + PR (게이트·팀·peer 생략, Lead 단독) |
 | [`/hotfix`](./.claude/skills/hotfix/SKILL.md) | 긴급 수정 | `baseBranch` 베이스 워크트리 |
 | [`/pr`](./.claude/skills/pr/SKILL.md) | 구현 완료 후 | PR 생성 (템플릿 적용) |
@@ -322,8 +333,7 @@ designer 는 **UI 구현만** 한다. 데이터 로직 · 테스트는 worker / 
 - **worker → lint/sfx** : 같은 턴에 병렬 호출. 본문엔 커밋 SHA + 워크트리 경로 + 변경 파일 목록
 - **lint/sfx → worker** : 보고 형식 그대로 (`## 린트/포매팅 검사 결과` 또는 `## 사이드이펙트 검사 결과` 헤더)
 - **worker → Lead** : PR 생성 후 완료 보고, 리뷰 라운드 완료 시마다 보고
-- **Lead → 모두** : 머지 확인 후 `shutdown_request` JSON 메시지
-- **shutdown_response(approve: true)** 회신 받은 뒤에만 `TeamDelete`
+- **머지 후** : 별도 종료 메시지 없음. `shutdown_request` 를 먼저 보내지 않는다 (§4-0). 워크트리·브랜치 정리로 끝
 
 ## 9. 금지 사항
 
@@ -350,8 +360,8 @@ designer 는 **UI 구현만** 한다. 데이터 로직 · 테스트는 worker / 
 
 - 테스트 파일 (`paths.testGlobs`) 수정
 - peer 검증 (lint+sfx) 생략하고 PR 생성 (`gates.peerReview = true` 일 때)
-- nested `Agent` 호출로 lint/sfx 를 직접 spawn 시도 (팀 모델에선 peer 가 이미 살아있음)
-- PR 생성 직후 자기 종료 (Lead 가 `shutdown_request` 보낼 때까지 idle 유지)
+- nested `Agent` 호출로 lint/sfx 를 직접 spawn 시도 — Lead 가 이미 그 이름을 등록해 뒀다. 새로 spawn 하면 이름을 뺏어 이전 검증 맥락이 끊긴다. 반드시 `SendMessage` 로 깨울 것
+- 리뷰 응대가 남았는데 `.claude` 밖에서 이름을 재사용하는 등 이름 선점을 깨뜨리는 행위
 - 사용자 가시 기능·스택·사이트맵·데이터 모델 변경 시 README.md 동기화 누락
 - CLAUDE.md 사실 영역 동기화 누락
 - AGENTS.md 전체 또는 CLAUDE.md 정책 영역 임의 수정 — Lead 가 `/meta` 로 별도 처리
@@ -390,7 +400,7 @@ designer 는 **UI 구현만** 한다. 데이터 로직 · 테스트는 worker / 
 | 상황 | 대응 |
 |---|---|
 | worker 가 spec 을 약화하고 싶어함 | Lead 에 보고 → Lead 자율 판단 → 결정 로그 작성 → test-writer 단발 재호출로 spec 수정 (사용자에게 묻지 않음) |
-| lint/sfx 가 회신 안 옴 | 같은 메시지 재발송 말고 `TaskList` 로 idle 여부 확인. spawn 실패 시 Lead 가 재spawn |
+| lint/sfx 가 회신 안 옴 | 같은 메시지를 재발송하지 말 것. 완료 상태는 정상이며 이름으로 보내면 재개된다. `SendMessage` 반환값의 `resumedAgentId` 로 실제 재개 여부를 확인하고, 이름 자체가 미등록이면 (spawn 실패) Lead 가 그때 spawn |
 | 머지 컨플릭트 | `/followup <PR번호>` → A-0-conflict 분기. **merge commit 으로만 해소** (rebase 금지) |
 | 워크트리에 settings 누락 | `git.symlinkFromMain` 에 정의된 파일을 다시 심링크 |
 | 결정 근거가 PRD 에 없음 | Lead 가 PRD · 기존 로그 · 기본값을 종합해 자율 판단. 결정 로그에 "PRD 에 명시 없음, Lead 기본값 선택" 명시 |

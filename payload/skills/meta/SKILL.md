@@ -117,7 +117,7 @@ git push -u origin "${MP}$0"
 
 ## 5단계: 리뷰 대기 / 머지 후 정리
 
-- PR 생성 후 Lead 는 idle 유지. reviewer 가 코멘트를 남기면 Lead 가 자율 판단으로 응대 (코드 작업처럼 worker 위임 흐름은 없음 — Lead 직접 처리)
+- PR 생성 후 Lead 는 사용자에게 PR URL 을 보고하고 리뷰를 기다린다. reviewer 가 코멘트를 남기면 Lead 가 자율 판단으로 응대 (코드 작업처럼 worker 위임 흐름은 없음 — Lead 직접 처리)
 - 사용자 머지 확인 후:
 ```bash
 WD=$(jq -r '.git.workTreeDir // ".worktrees"' .claude/project.json)

@@ -1,6 +1,6 @@
 ---
 name: work
-description: 새 기능 작업을 시작할 때 사용한다. 먼저 기존 워크트리와 PR 상태를 확인하여 이어서 작업할지 새로 시작할지 판단한 후, 필요하면 stagingBranch (없으면 baseBranch) 기반으로 worktree 를 생성한다. 이후 Lead (메인 세션) 가 팀을 만들고 worker·lint·sfx 팀원을 spawn 한다.
+description: 새 기능 작업을 시작할 때 사용한다. 먼저 기존 워크트리와 PR 상태를 확인하여 이어서 작업할지 새로 시작할지 판단한 후, 필요하면 stagingBranch (없으면 baseBranch) 기반으로 worktree 를 생성한다. 이후 Lead (메인 세션) 가 worker·lint·sfx 를 이름과 함께 spawn 한다.
 argument-hint: "<브랜치명 또는 작업주제> [작업설명]"
 ---
 
@@ -35,7 +35,7 @@ cat .claude/project.json 2>/dev/null || echo "⚠️ .claude/project.json 없음
 - 사용자 행동 흐름 변경 (페이지 동작·폼 제출 분기·에러 처리)
 - 디자인 시스템 / UI 프리미티브 확장
 
-→ **디자이너 게이트 (조건부) + TDD 게이트 (조건부) + 팀 spawn + peer 검증** 전체 적용.
+→ **디자이너 게이트 (조건부) + TDD 게이트 (조건부) + 에이전트 spawn + peer 검증** 전체 적용.
 
 ### 경량 경로 — 다음을 **모두** 만족할 때만
 1. 새 라우트 / Server Action / 새 가드 분기 / 새 마이그레이션 **없음**
@@ -44,9 +44,9 @@ cat .claude/project.json 2>/dev/null || echo "⚠️ .claude/project.json 없음
 4. 변경 표면: 순수 유틸 함수 추가 또는 카피 / className / Badge variant 등 시각 표현만
 5. `<commands.lint>` + `<commands.build>` 통과만으로 회귀 차단 충분 (TDD 의 회귀 net 가치가 비용 초과하지 않음)
 
-→ 디자이너·TDD·팀·peer **모두 생략**. Lead 단독으로 Read/Edit/Write + lint + build + PR.
+→ 디자이너·TDD·에이전트 spawn·peer **모두 생략**. Lead 단독으로 Read/Edit/Write + lint + build + PR.
 
-다음 단계부터는 **정식 경로** 기준 절차. 경량 경로면 3단계 (팀 세팅) 생략하고 4단계 (워크트리 정리) 로 진입.
+다음 단계부터는 **정식 경로** 기준 절차. 경량 경로면 3단계 (에이전트 세팅) 생략하고 4단계 (워크트리 정리) 로 진입.
 
 ## 1단계: 연속성 확인 (필수)
 
@@ -127,11 +127,11 @@ Agent({
 })
 ```
 
-team_name·name 없이 단발 호출. designer 가 보고하면 **Lead 가 자율적으로** UI 톤·컴포넌트 골격을 채택할지 판단하고, 비자명한 결정을 `<decisionsDir>/<slug>.md` 에 기록한 뒤 2.5단계로 넘어간다. 사용자에게 묻지 않는다.
+`name` 없이 단발 호출한다 — 이름을 주지 않으면 재개 대상이 아닌 일회성 호출이 된다. designer 가 보고하면 **Lead 가 자율적으로** UI 톤·컴포넌트 골격을 채택할지 판단하고, 비자명한 결정을 `<decisionsDir>/<slug>.md` 에 기록한 뒤 2.5단계로 넘어간다. 사용자에게 묻지 않는다.
 
 ## 2.5단계: TDD 게이트 (사용자 행동 흐름이 바뀌는 작업이면 필수)
 
-`project.json` 의 `gates.tdd` 가 `true` 이고 작업이 사용자 행동 흐름을 바꾸면 팀을 spawn 하기 **전에** Lead 가 `test-writer` 를 단발로 호출해 실패하는 E2E + 통합 + 단위 spec 을 먼저 잡는다. **사용자 승인 게이트 없음** — Lead 가 자율 판단으로 spec 을 채택하고 결정 로그를 남긴 뒤 3단계 팀 세팅으로 넘어간다.
+`project.json` 의 `gates.tdd` 가 `true` 이고 작업이 사용자 행동 흐름을 바꾸면 에이전트를 spawn 하기 **전에** Lead 가 `test-writer` 를 단발로 호출해 실패하는 E2E + 통합 + 단위 spec 을 먼저 잡는다. **사용자 승인 게이트 없음** — Lead 가 자율 판단으로 spec 을 채택하고 결정 로그를 남긴 뒤 3단계 에이전트 세팅으로 넘어간다.
 
 ### 작업 성격 판단
 
@@ -161,76 +161,76 @@ Agent({
 })
 ```
 
-team_name·name 없이 단발로 호출한다 (test-writer 는 팀 멤버가 아니라 일회성 도우미).
+`name` 없이 단발로 호출한다 (test-writer 는 peer 검증 흐름의 멤버가 아니라 일회성 도우미 — 이름을 주지 않으므로 재개 대상도 아니다).
 
 ### Lead 자율 판단 게이트
 
 test-writer 가 spec 과 실패 로그를 보고하면 **Lead 가 자율적으로 판단**한다 — 사용자에게 묻지 않는다.
-- 시나리오·검증 포인트가 적절하면 채택 → 결정 로그 작성 → 3단계 팀 세팅
+- 시나리오·검증 포인트가 적절하면 채택 → 결정 로그 작성 → 3단계 에이전트 세팅
 - 시나리오 수정이 필요하면 test-writer 를 재호출해 spec 갱신 → 결정 로그에 수정 사유 기록
 - spec 이 너무 강하면 약화, 너무 약하면 강화 — 모두 Lead 판단
 
 결정 로그는 `<decisionsDir>/<slug>.md` 로 그 작업 워크트리에 추가한다.
 
-### 3단계 팀 spawn 시 worker 프롬프트에 포함할 사항 (TDD 게이트를 통과한 경우)
+### 3단계 에이전트 spawn 시 worker 프롬프트에 포함할 사항 (TDD 게이트를 통과한 경우)
 
 worker spawn 프롬프트의 요구사항 섹션에 다음을 명시한다:
 - "선작성된 spec: `<paths.tests.e2e>/<경로>.spec.ts`, `<paths.tests.unit>/<경로>.test.ts` — 이 모든 테스트를 통과시키는 게 작업 목표"
 - "통과를 위해 spec 자체를 약화시키지 마라. 약화가 필요하면 Lead 에 보고 — Lead 가 자율 판단해 spec 을 갱신"
 - "README.md / CLAUDE.md 사실 영역 동기화 의무: 사용자 가시 기능·스택·사이트맵·데이터 모델이 변경되면 함께 갱신"
 
-## 3단계: 팀 세팅 (Lead = 메인 세션이 수행)
+## 3단계: 에이전트 세팅 (Lead = 메인 세션이 수행)
 
 워크트리가 준비되면 **Lead 가** 다음을 이 순서대로 실행한다.
-`CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS=1` 은 `.claude/settings.local.json` 에 켜져 있어야 한다.
 
-> `project.json` 의 `gates.peerReview` 가 `false` 면 팀 spawn 생략 — Lead 단독 워크플로우. 경량 경로와 동일하게 4단계로.
+> `project.json` 의 `gates.peerReview` 가 `false` 면 spawn 생략 — Lead 단독 워크플로우. 경량 경로와 동일하게 4단계로.
 
-### 3-1. 팀 생성
+### 3-1. 팀 생성 단계는 없다
 
-```
-TeamCreate({
-  team_name: "feat-<브랜치명의 일부>",
-  description: "<이 작업 한 줄 설명>"
-})
-```
+세션에는 **암묵적 팀이 하나** 있고 별도 생성 절차가 없다. `Agent` 호출에 `name` 을 주면 그 이름이 곧 통신 주소가 된다 (`SendMessage(to: "<이름>")`). 이름은 에이전트가 **완료된 뒤에도 유효**하며, 이름으로 메시지를 보내면 그 에이전트의 transcript 가 재개된다.
 
-### 3-2. 팀원 3 명 병렬 spawn (한 메시지에 세 Agent 호출)
+- 같은 이름을 나중 spawn 이 가져가면 **최신이 이긴다**. 한 워크트리 작업 안에서 `worker`/`lint`/`sfx` 이름을 재사용하지 않는다.
+- `Agent` 는 **기본 백그라운드 실행**이다. Lead 는 spawn 후 턴을 마치고, 완료 알림이나 `SendMessage` 로 이어받는다.
+
+### 3-2. 에이전트 3 명 병렬 spawn (한 메시지에 세 Agent 호출)
 
 ```
 Agent({
   subagent_type: "worker",
-  team_name: "feat-...",
   name: "worker",
+  description: "<작업 주제 한 줄>",
   prompt: "작업 프롬프트. 반드시 포함:\n- 워크트리 경로: <절대경로>\n- 브랜치/베이스 정보 (feature/<slug> ← origin/<staging>)\n- 선작성된 spec 경로 목록 (있으면)\n- 테스트 파일 (paths.testGlobs) 수정 금지 — 약화 필요 시 Lead 에 보고\n- README.md / CLAUDE.md 사실 영역 동기화 의무\n- 구체적 요구사항·설계 결정·제약\n- 작업 완료 시 commands.test 통과 확인 후 lint 와 sfx 에게 SendMessage 로 검증 요청"
 })
 
 Agent({
   subagent_type: "lint-checker",
-  team_name: "feat-...",
   name: "lint",
-  prompt: "팀원으로 대기. worker 가 SendMessage 로 검증을 요청하면 .claude/agents/lint-checker.md 의 절차대로 검사하고 결과를 worker 에게 SendMessage 로 회신. 대기 중에는 아무 작업도 하지 말 것."
+  description: "린트 검사 담당",
+  prompt: "이 spawn 은 **이름 선점** 목적이다. 지금은 검사할 대상이 없으니 아무 작업도 하지 말고 '대기 준비 완료' 한 줄만 남기고 즉시 종료해라. 이후 worker 가 SendMessage 로 검증을 요청하면 네 transcript 가 그대로 재개된다. 그때 .claude/agents/lint-checker.md 의 절차대로 검사하고 결과를 worker 에게 SendMessage 로 회신해라."
 })
 
 Agent({
   subagent_type: "side-effect-checker",
-  team_name: "feat-...",
   name: "sfx",
-  prompt: "팀원으로 대기. worker 가 SendMessage 로 검증을 요청하면 .claude/agents/side-effect-checker.md 의 절차대로 검사하고 결과를 worker 에게 SendMessage 로 회신. 대기 중에는 아무 작업도 하지 말 것."
+  description: "사이드이펙트 검사 담당",
+  prompt: "이 spawn 은 **이름 선점** 목적이다. 지금은 검사할 대상이 없으니 아무 작업도 하지 말고 '대기 준비 완료' 한 줄만 남기고 즉시 종료해라. 이후 worker 가 SendMessage 로 검증을 요청하면 네 transcript 가 그대로 재개된다. 그때 .claude/agents/side-effect-checker.md 의 절차대로 검사하고 결과를 worker 에게 SendMessage 로 회신해라."
 })
 ```
+
+**lint·sfx 를 미리 spawn 하는 이유는 이름 등록 하나뿐이다.** 이름이 등록돼 있어야 worker 가 `SendMessage(to: "lint")` 로 깨울 수 있다. 두 에이전트는 spawn 직후 곧바로 완료되며, 그게 정상이다.
 
 ### 3-3. 작업 진행 (PR 생성까지)
 
 worker 가 PR 생성 보고를 Lead 에게 SendMessage 로 보낼 때까지 대기.
 중간에 사용자가 추가 지시를 주면 Lead 가 `SendMessage(to: "worker", ...)` 로 전달.
 
-### 3-4. 리뷰 대기 (팀 유지)
+### 3-4. 리뷰 대기 (이름 유지)
 
 worker 가 PR 생성 보고를 보내면:
-- **팀을 종료하지 않는다.** 별도 세션의 `reviewer` 가 PR 을 확인하고 GitHub 에 코멘트를 남길 때까지 worker·lint·sfx 를 대기 상태로 유지한다.
+- worker·lint·sfx 는 할 일이 없으므로 **완료 상태로 들어간다. 그게 정상이고, 되살릴 필요 없다.**
+- 이름은 계속 유효하다. 리뷰 코멘트가 오면 `SendMessage(to: "worker")` 로 그 transcript 를 재개하면 되고, 작업 맥락은 그대로 남아 있다.
 - Lead 는 사용자에게 PR URL 을 보고하고 리뷰 결과를 기다린다.
-- worker·lint·sfx 는 SendMessage 없이 idle. 자동 종료되지 않는다.
+- **같은 이름으로 새 에이전트를 다시 spawn 하지 않는다** — 새로 spawn 하면 이름을 빼앗아 이전 맥락에 도달할 수 없게 된다.
 
 ### 3-5. 리뷰 코멘트 응대
 
@@ -240,26 +240,22 @@ worker 가 PR 생성 보고를 보내면:
 3. worker 가 수정 → lint·sfx 재검증 → 추가 커밋 push → Lead 에 보고
 4. 추가 라운드가 필요하면 3-5 반복
 
-응대 사이클이 끝나고 사용자가 머지를 진행할 때까지 팀은 계속 유지한다.
+응대 사이클이 끝나고 사용자가 머지를 진행할 때까지 이름을 재사용하지 않는다.
 
 ### 3-6. 머지 후 정리
 
 사용자가 PR 을 직접 머지한 사실을 확인한 후 (`gh pr view <번호> --json state` → `MERGED`):
-```
-SendMessage({to: "worker", message: {type: "shutdown_request"}})
-SendMessage({to: "lint",   message: {type: "shutdown_request"}})
-SendMessage({to: "sfx",    message: {type: "shutdown_request"}})
-```
-팀원 전원이 `shutdown_response(approve: true)` 회신 후:
-```
-TeamDelete()
-```
 
-머지 전에 팀을 종료하지 않는다 — 리뷰 응대를 위해 worker 가 살아있어야 한다.
+**팀 종료 절차는 없다.** 에이전트는 이미 완료 상태이므로 별도로 거둬들일 대상이 아니고, `shutdown_request` 는 요청받지 않은 이상 먼저 보내지 않는다. 머지 후 정리는 4단계의 워크트리·브랜치 정리가 전부다.
+
+예외 — 아직 **실행 중인** 백그라운드 에이전트가 남아 있으면 (긴 작업이 걸려 있거나 잘못 spawn 된 경우) 이름으로 중단한다:
+```
+TaskStop({task_id: "worker"})
+```
 
 ## 4단계: 워크트리 정리 (머지 후)
 
-PR 머지 + 팀 종료 후:
+PR 머지 후:
 ```bash
 FP=$(jq -r '.git.branchPrefix.feature // "feature/"' .claude/project.json)
 WD=$(jq -r '.git.workTreeDir // ".worktrees"' .claude/project.json)

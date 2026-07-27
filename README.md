@@ -163,7 +163,7 @@ HARNESS_TEST_CMD="pnpm test" \
    .claude/settings.local.json
    .worktrees/
    ```
-5. 팀 모드 활성:
+5. (선택) 에이전트 팀 실험 플래그 — **Claude Code 2.1.220 기준 없어도 동작한다.** 이름 있는 `Agent` spawn 과 `SendMessage` 재개는 플래그 미설정 상태에서 동작을 확인했다. 구버전 호환이 필요하면:
    ```bash
    echo '{"env": {"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"}}' > .claude/settings.local.json
    ```
@@ -193,6 +193,8 @@ HARNESS_TEST_CMD="pnpm test" \
 ## 업데이트
 
 **설치한 방법과 같은 진입점으로 업데이트한다.** 어느 쪽이든 갱신 대상은 `.claude/` 의 `skills/`·`agents/`·`hooks/` 뿐이고, `project.json`·`settings.json`·`CLAUDE.md`·`AGENTS.md` 는 **건드리지 않는다** (프로젝트별 설정·컨텍스트 보존).
+
+> ⚠️ **협업 규약 (`AGENTS.md`) 이 바뀐 릴리스는 업데이트로 반영되지 않는다.** `AGENTS.md` 는 보존 대상이라 덮어쓰지 않기 때문이다. 하네스의 `payload/AGENTS.md` 가 바뀐 경우 (예: 에이전트 실행 모델 변경) 해당 섹션을 프로젝트의 `AGENTS.md` 에 **수동 백포트**해야 한다 — 프로젝트에서 `/meta` 로 별도 PR 을 여는 게 표준 경로다.
 
 ### 방법 1 — AI 진입점 (`깔아줘` 로 설치한 경우)
 

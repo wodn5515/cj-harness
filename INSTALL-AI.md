@@ -144,14 +144,15 @@ chmod +x .claude/hooks/*.sh
 EOF
 ```
 
-### 2A-5. `.gitignore` + 팀 모드 활성
+### 2A-5. `.gitignore` + settings.local.json
 
 ```bash
 # .gitignore 보강 (이미 있는 항목은 건드리지 않음)
 grep -qxF '.claude/settings.local.json' .gitignore 2>/dev/null || echo '.claude/settings.local.json' >> .gitignore
 grep -qxF '.worktrees/' .gitignore 2>/dev/null || echo '.worktrees/' >> .gitignore
 
-# 팀 모드 (gitignored)
+# 로컬 설정 (gitignored). 에이전트 팀 실험 플래그는 Claude Code 2.1.220 기준
+# 없어도 동작하므로 선택 사항 — 구버전 호환이 필요할 때만 켠다.
 echo '{"env": {"CLAUDE_CODE_EXPERIMENTAL_AGENT_TEAMS": "1"}}' > .claude/settings.local.json
 ```
 
@@ -193,7 +194,7 @@ cp "$TMP/cj-harness/payload/settings.json"       .claude/settings.json
 cp "$TMP/cj-harness/payload/AGENTS.md"           AGENTS.md
 cp "$TMP/cj-harness/payload/CLAUDE.md"           CLAUDE.md
 
-# .gitignore + 팀 모드
+# .gitignore + 로컬 설정 (팀 실험 플래그는 2.1.220 기준 선택 사항 — 구버전 호환용)
 cat > .gitignore <<'EOF'
 .claude/settings.local.json
 .worktrees/
