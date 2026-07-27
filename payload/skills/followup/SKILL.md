@@ -1,6 +1,6 @@
 ---
 name: followup
-description: PR 의 후속 처리를 자동화한다. PR 번호를 받아 상태를 확인하고, OPEN 이면 신규 리뷰 코멘트를 worker 에 위임, MERGED/CLOSED 면 팀 종료·워크트리·브랜치 정리를 수행한다. Lead 세션에서 호출.
+description: PR 의 후속 처리를 자동화한다. PR 번호를 받아 상태를 확인하고, OPEN 이면 신규 리뷰 코멘트를 worker 에 위임, MERGED/CLOSED 면 워크트리·브랜치 정리를 수행한다. Lead 세션에서 호출.
 argument-hint: "<PR번호>"
 ---
 
@@ -79,7 +79,7 @@ git worktree list
 ```
 출력에서 `headRefName` 과 일치하는 항목의 경로를 찾는다.
 
-**Lead 세션에 같은 브랜치 작업의 worker 팀이 살아있는 경우:**
+**Lead 세션이 같은 브랜치 작업의 worker 를 spawn 했던 경우:**
 - `SendMessage(to: "worker", ...)` 로 다음을 전달:
   - PR URL, headRefName, baseRefName, 워크트리 경로
   - 작업 지시 (워커가 그대로 실행):
@@ -95,9 +95,9 @@ git worktree list
     10. Lead 에 컨플릭트 해소 보고
 - worker 라운드 완료 후 다시 `/followup $0` 로 mergeable 재확인.
 
-**팀이 없는 세션:**
+**worker 를 spawn 한 적 없는 세션:**
 ```
-PR #$0 컨플릭트 발생. 이 세션에는 작업 팀이 없습니다.
+PR #$0 컨플릭트 발생. 이 세션에는 해당 작업의 worker 가 없습니다.
 워크트리: <매칭된 경로 또는 '없음'>
 작업 세션에서 다시 `/followup $0` 을 실행해 컨플릭트를 해소하거나,
 직접 워크트리에서 `git fetch origin <baseRefName> && git merge origin/<baseRefName>` 로 해소 후 push 하세요.
@@ -138,13 +138,13 @@ PR #$0: 미반영 코멘트 없음. 머지 대기 중.
 
 이후 분기:
 
-**Lead 세션에 같은 브랜치 (`headRefName`) 작업의 worker 팀이 살아있는 경우:**
-- Lead 는 자기가 spawn 한 `team_name` 을 conversation context 에서 회상
+**Lead 세션이 같은 브랜치 (`headRefName`) 작업의 worker 를 spawn 했던 경우:**
+- worker 가 이미 완료 상태여도 상관없다 — 이름이 유효하면 transcript 가 재개된다
 - `SendMessage(to: "worker", ...)` 로 코멘트 요약 + 우선순위 + PR URL 전달
-- worker 가 응대 사이클 진행
-- Lead 는 worker 의 라운드 완료 SendMessage 를 기다림
+- 반환값의 `resumedAgentId` 로 실제 재개됐는지 확인. 이름이 미등록이면 아래 "worker 를 spawn 한 적 없는 세션" 분기로
+- worker 가 응대 사이클 진행. Lead 는 worker 의 라운드 완료 SendMessage 를 기다림
 
-**팀이 없는 세션:**
+**worker 를 spawn 한 적 없는 세션:**
 
 워크트리 경로 탐색:
 ```!
@@ -153,7 +153,7 @@ git worktree list
 출력에서 `headRefName` 과 일치하는 항목의 경로를 찾는다. 매칭이 없으면 "워크트리 없음 (이미 정리됨 또는 다른 머신)" 으로 안내.
 
 ```
-PR #$0 에 신규 코멘트 N 건. 이 세션에는 작업 팀이 없습니다.
+PR #$0 에 신규 코멘트 N 건. 이 세션에는 해당 작업의 worker 가 없습니다.
 워크트리: <매칭된 경로 또는 '없음'>
 작업 세션에서 다시 `/followup $0` 을 실행하거나, 직접 worktree 에 들어가 처리해주세요.
 ```
@@ -169,20 +169,14 @@ git worktree list
 
 `headRefName` 으로 워크트리 매칭 → 다음 순서로 정리.
 
-#### B-1. 팀 종료 (Lead 세션에 팀이 살아있는 경우)
+#### B-1. 에이전트 정리 — 별도 절차 없음
 
-```
-SendMessage({to: "worker", message: {type: "shutdown_request"}})
-SendMessage({to: "lint",   message: {type: "shutdown_request"}})
-SendMessage({to: "sfx",    message: {type: "shutdown_request"}})
-```
+머지 후 에이전트를 거둬들이는 단계는 **없다**. worker·lint·sfx 는 이미 완료 상태이고, `shutdown_request` 는 요청받지 않은 이상 먼저 보내지 않는다.
 
-전원 `shutdown_response(approve: true)` 회신 후:
+예외 — 아직 **실행 중인** 백그라운드 에이전트가 남아 있으면 이름으로 중단한다:
 ```
-TeamDelete()
+TaskStop({task_id: "worker"})
 ```
-
-팀이 없으면 이 단계 건너뛴다.
 
 #### B-2. 워크트리 + 로컬 브랜치 정리
 
@@ -254,7 +248,7 @@ GitHub 의 "Automatically delete head branches" 설정이 켜져 있으면 자�
 - `PR #$0 OPEN — 미반영 코멘트 없음, 머지 대기`
 - `PR #$0 OPEN 컨플릭트 — worker 에게 origin/<base> 머지 위임`
 - `PR #$0 OPEN — mergeable UNKNOWN, GitHub 검사 중. 잠시 후 재호출`
-- `PR #$0 MERGED — 팀 종료 + 워크트리/브랜치 정리 완료. /sync 권장` (stagingBranch 있는 경우)
+- `PR #$0 MERGED — 워크트리/브랜치 정리 완료. /sync 권장` (stagingBranch 있는 경우)
 - `PR #$0 CLOSED — 사용자 보존 선택, 정리 보류`
 
 ## 절대 금지
@@ -263,5 +257,5 @@ GitHub 의 "Automatically delete head branches" 설정이 켜져 있으면 자�
 - `git branch -D` 강제 삭제 (사용자 명시 동의 없이)
 - 메인 워크트리 (보호 브랜치 체크아웃) 에 대해 `git worktree remove` 시도
 - PR 을 직접 머지·닫기 (사용자가 수행)
-- worker 팀이 살아있는데 `/followup` 호출자가 위임 없이 직접 코드 수정
+- 해당 작업의 worker 가 있는데 `/followup` 호출자가 위임 없이 직접 코드 수정
 - 컨플릭트 해소 시 `git rebase` + `git push --force`
